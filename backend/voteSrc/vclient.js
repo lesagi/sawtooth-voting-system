@@ -1,0 +1,9 @@
+const { createContext, CryptoFactory } = require("sawtooth-sdk/signing");
+const crypto = require("crypto");
+const { protobuf } = require("sawtooth-sdk");
+const fetch = require("node-fetch");
+const context = createContext("secp256k1");
+const { TextEncoder, TextDecoder } = require("text-encoding/lib/encoding");
+const privateKey = context.newRandomPrivateKey();
+const cryptoFact = new CryptoFactory(context);
+const signer = cryptoFact.newSigner(privateKey);

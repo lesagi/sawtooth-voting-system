@@ -18,8 +18,8 @@
 "use strict";
 
 const crypto = require("crypto");
-
-class XoState {
+const { _makeXoAddress } = require("./voteFamily");
+export default class XoState {
   constructor(context) {
     this.context = context;
     this.addressCache = new Map([]);
@@ -101,18 +101,6 @@ const _hash = (x) =>
     .toLowerCase()
     .substring(0, 64);
 
-const XO_FAMILY = "xo";
-
-const XO_NAMESPACE = _hash(XO_FAMILY).substring(0, 6);
-
-const _makeXoAddress = (x) => XO_NAMESPACE + _hash(x);
-
-module.exports = {
-  XO_NAMESPACE,
-  XO_FAMILY,
-  XoState,
-};
-
 const _deserialize = (data) => {
   let gamesIterable = data
     .split("|")
@@ -135,6 +123,6 @@ const _serialize = (games) => {
   }
 
   gameStrs.sort();
-
+  console.log(gameStrs);
   return Buffer.from(gameStrs.join("|"));
 };
