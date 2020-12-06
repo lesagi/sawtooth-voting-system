@@ -1,0 +1,16 @@
+.container {
+  display: grid;
+  width: 100%;
+  min-height: 100vh;
+  grid-template-rows: minmax(5vh, auto) minmax(95vh, auto) minmax(5vh, auto);
+}
+
+.header {
+  grid-row: 1/2;
+}
+.content {
+  grid-row: 2/3;
+}
+.footer {
+  grid-row: 3/4;
+}
