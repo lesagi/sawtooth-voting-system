@@ -120,7 +120,7 @@ const getBatchStatus = async (id) => {
       `http://localhost:8008/batch_statuses?id=${id}`
     );
     const status = await statusReq.json();
-    // !-- Assuming there's only one transaction to a batch its status.data[0], otherwise: status.data
+    // TODO: -- Assuming there's only one transaction to a batch its status.data[0], otherwise: status.data
     return status.data[0];
   } catch (e) {}
 };
