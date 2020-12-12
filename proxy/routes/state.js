@@ -5,23 +5,24 @@ const { sendPayload } = require("../src/Payload");
 
 router.get("/", function (req, res) {
   getCampaignsMRS().then((campaigns) => {
-    res.send({ success: true, res: campaigns });
+    res.json(campaigns);
   });
 });
 
 router.get("/:name", function (req, res) {
   const { name } = req.params;
   getCampaignState(name).then((state) => {
-    res.send({ success: true, res: state });
+    res.json(state);
   });
 });
 
-router.post("/", function (req, res) {
+router.post("/:name", function (req, res) {
   const { signer } = req;
-  const { name, state } = req.query;
-  const payload = `${name || "no_name"},${state.toLowerCase()},_,_`;
+  const { name } = req.params;
+  const { new_state } = req.query;
+  const payload = `${name || "no_name"},${new_state.toLowerCase()},_,_`;
   sendPayload(signer, payload).then((response) =>
-    res.json({ ...response, name, state })
+    res.json({ ...response, name, new_state })
   );
 });
 

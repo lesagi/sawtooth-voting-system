@@ -21,4 +21,14 @@ router.post("/add_party", function (req, res) {
     res.json({ ...response, name, party })
   );
 });
+
+router.post("/remove_party", function (req, res) {
+  const { signer } = req;
+  const { name, party } = req.query;
+
+  const payload = `${name || "no_name"},remove_party,${party},_`;
+  sendPayload(signer, payload).then((response) =>
+    res.json({ ...response, name, party })
+  );
+});
 module.exports = router;
