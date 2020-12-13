@@ -21,18 +21,17 @@ const { InvalidTransaction } = require("sawtooth-sdk/processor/exceptions");
 const decoder = new TextDecoder("utf8");
 
 class CampaignPayload {
-  constructor(name, action, party, adminAddr) {
+  constructor(name, action, party) {
     this.name = name;
     this.action = action;
     this.party = party;
-    this.adminAddr = adminAddr;
   }
 
   static fromBytes(payload) {
     payload = decoder.decode(payload).split(",");
     if (payload.length === 4) {
-      const [name, action, party, adminAddr] = payload;
-      let campPayload = new CampaignPayload(name, action, party, adminAddr);
+      const [name, action, party] = payload;
+      let campPayload = new CampaignPayload(name, action, party);
       if (!campPayload.name) {
         throw new InvalidTransaction("Name is required");
       }

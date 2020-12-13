@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { getCampaignState, getCampaignsMRS } = require("../src/State");
 const { sendPayload } = require("../src/Payload");
+const { generateSigner } = require("../src/Signer");
 
 router.get("/", function (req, res) {
   getCampaignsMRS().then((campaigns) => {
@@ -17,9 +18,9 @@ router.get("/:name", function (req, res) {
 });
 
 router.post("/:name", function (req, res) {
-  const { signer } = req;
   const { name } = req.params;
-  const { new_state } = req.query;
+  const { new_state, privkey } = req.query;
+  const signer = generateSigner(privkey);
   const payload = `${name || "no_name"},${new_state.toLowerCase()},_,_`;
   sendPayload(signer, payload).then((response) =>
     res.json({ ...response, name, new_state })

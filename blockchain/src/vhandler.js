@@ -25,7 +25,7 @@ const { _display } = require("./utils");
 const { TransactionHandler } = require("sawtooth-sdk/processor/handler");
 const { InvalidTransaction } = require("sawtooth-sdk/processor/exceptions");
 
-const _createCampaign = (campaignState, campaignName, admin) => {
+const _createCampaign = (campaignState, campaignName) => {
   return campaignState.getCampaign(campaignName).then((campaign) => {
     if (campaign !== undefined) {
       throw new InvalidTransaction("Invalid Action: Campaign already exists.");
@@ -36,11 +36,9 @@ const _createCampaign = (campaignState, campaignName, admin) => {
       parties: undefined,
       count: undefined,
       state: "SETUP",
-      admins: admin,
     };
 
-    const adminString = admin.toString().substring(0, 6);
-    _display(`Admin ${adminString} created the campaign ${campaignName}`);
+    _display(`Campaign ${campaignName} was created`);
 
     return campaignState.setCampaign(campaignName, createdCampaign);
   });
@@ -104,14 +102,30 @@ const _vote = (campaignState, campaignName, voter, party) => {
   });
 };
 
-const _verifyandParseAdmins = (campaign, admin) => {
+const _verifyAdmin = (campaign, admin) => {
+  // {
+  //   "privateKey": "3dca5bb233242e9ebe188bc89005ccc81c17422f1fa20a5b6fc566b72d43e5a2",
+  //   "publicKey": "03998d071ea09eea282f986429887a2693b017f6d122a2c95887df21fa006bae92"
+  // }
+  // {
+  //   "privateKey": "982fe507f3e5d9d35d548a2b66e7319cd5034ff61abc82a7446e8a547268d291",
+  //   "publicKey": "03c95695f6acabd711817469b1c4e5f8895c537664876f318c8de402caeef6184e"
+  // }
+  // {
+  //   "privateKey": "82156f0c52cf239fb52da067cb2c9d3abe5c8cddf048e0399c89bf67092f5fb4",
+  //   "publicKey": "038aac7f2bb672f3a4ec2f5c64d8766bbcabc8a71d63f9af060273f8e2f62e6636"
+  // }
   let { admins } = campaign;
   if (!admin) {
     throw new InvalidTransaction(
       `Invalid Action: No admin identification was passed.`
     );
   }
-  admins = admins.split(",");
+  admins = [
+    `03998d071ea09eea282f986429887a2693b017f6d122a2c95887df21fa006bae92`,
+    `03c95695f6acabd711817469b1c4e5f8895c537664876f318c8de402caeef6184e`,
+    `038aac7f2bb672f3a4ec2f5c64d8766bbcabc8a71d63f9af060273f8e2f62e6636`,
+  ];
   if (!admins || admins.length == 0) {
     throw new InvalidTransaction(
       `Invalid Action: No admins is listed to manage this campaign.`
@@ -127,12 +141,12 @@ const _verifyandParseAdmins = (campaign, admin) => {
         )} doesn't have sufficient permissions to perform this kind of operation.`
     );
   }
-  return admins;
+  return true;
 };
 
 const _close = (campaignState, campaignName, admin) => {
   return campaignState.getCampaign(campaignName).then((campaign) => {
-    _verifyandParseAdmins(campaign, admin);
+    _verifyAdmin(campaign, admin);
     campaign.state = "CLOSED";
     _display(
       `Campaign is closed with the following results:\n\n${_campaignToString(
@@ -144,33 +158,9 @@ const _close = (campaignState, campaignName, admin) => {
   });
 };
 
-const _modifyAdminList = (
-  campaignState,
-  campaignName,
-  admin,
-  otherAdminAddr,
-  cmd
-) => {
-  return campaignState.getCampaign(campaignName).then((campaign) => {
-    let admins = _verifyandParseAdmins(campaign, admin);
-
-    if (cmd === "add") {
-      if (!admins.includes(otherAdminAddr)) {
-        admins.push(otherAdminAddr);
-      }
-    } else if (cmd === "remove") {
-      if (admins.includes(otherAdminAddr)) {
-        admins.splice(admins.indexOf(otherAdminAddr), 1);
-      }
-    }
-    campaign.admins = admins.join(",");
-    return campaignState.setCampaign(campaignName, campaign);
-  });
-};
-
 const _modifyPartyList = (campaignState, campaignName, admin, party, cmd) => {
   return campaignState.getCampaign(campaignName).then((campaign) => {
-    _verifyandParseAdmins(campaign, admin);
+    _verifyAdmin(campaign, admin);
     let { state, parties, count } = campaign;
     parties = parties ? parties.split(",") : [];
     count = count ? count.split(",") : [];
@@ -211,7 +201,7 @@ const _modifyRunningCampaignState = (
   newState
 ) => {
   return campaignState.getCampaign(campaignName).then((campaign) => {
-    _verifyandParseAdmins(campaign, admin);
+    _verifyAdmin(campaign, admin);
     let { state } = campaign;
     if (["CLOSED"].includes(state)) {
       throw new InvalidTransaction(
@@ -236,7 +226,7 @@ class CampaignHandler extends TransactionHandler {
     let userPubKey = header.signerPublicKey;
     const { name, action, party, adminAddr } = payload;
     if (action === "create") {
-      return _createCampaign(campaignState, name, userPubKey);
+      return _createCampaign(campaignState, name);
     } else if (action === "open" || action === "suspend") {
       return _modifyRunningCampaignState(
         campaignState,
@@ -273,3 +263,27 @@ class CampaignHandler extends TransactionHandler {
 }
 
 module.exports = CampaignHandler;
+
+// const _modifyAdminList = (
+//   campaignState,
+//   campaignName,
+//   admin,
+//   otherAdminAddr,
+//   cmd
+// ) => {
+//   return campaignState.getCampaign(campaignName).then((campaign) => {
+//     let admins = _verifyandParseAdmins(campaign, admin);
+
+//     if (cmd === "add") {
+//       if (!admins.includes(otherAdminAddr)) {
+//         admins.push(otherAdminAddr);
+//       }
+//     } else if (cmd === "remove") {
+//       if (admins.includes(otherAdminAddr)) {
+//         admins.splice(admins.indexOf(otherAdminAddr), 1);
+//       }
+//     }
+//     campaign.admins = admins.join(",");
+//     return campaignState.setCampaign(campaignName, campaign);
+//   });
+// };

@@ -10,9 +10,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + "/public"));
 app.use(methodOverride("_method"));
 
-const { privateKey } = generateKeys();
-const signer = generateSigner(privateKey);
-
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.setHeader(
@@ -22,10 +19,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  req.signer = signer;
-  next();
-});
 //=================
 // ROUTES IMPORTING
 //=================

@@ -45,8 +45,8 @@ const _serialize = (campaigns) => {
   */
   for (const nameCampaign of campaigns) {
     const [name, campaign] = nameCampaign;
-    const { parties, count, state, admins } = campaign;
-    campaignStrs.push([name, parties, count, state, admins].join(";"));
+    const { parties, count, state } = campaign;
+    campaignStrs.push([name, parties, count, state].join(";"));
   }
   campaignStrs.sort();
   return Buffer.from(campaignStrs.join("|"));

@@ -9,7 +9,8 @@ const generateKeys = () => {
   return { privateKey, publicKey };
 };
 
-const generateSigner = (privateKey) => {
+const generateSigner = (privateKeyHex) => {
+  const privateKey = Secp256k1PrivateKey.fromHex(privateKeyHex.trim());
   const cryptoFact = new CryptoFactory(context);
   const signer = cryptoFact.newSigner(privateKey);
   return signer;
