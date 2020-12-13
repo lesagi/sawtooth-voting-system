@@ -17,13 +17,33 @@
 
 "use strict";
 
-const CampaignPaylod = require("./vpayload");
-
-const { CAMP_NAMESPACE, CAMP_FAMILY, _campaignToString } = require("./family");
-const { CampaignState } = require("./vstate");
-const { _display } = require("./utils");
+const axios = require("axios");
 const { TransactionHandler } = require("sawtooth-sdk/processor/handler");
 const { InvalidTransaction } = require("sawtooth-sdk/processor/exceptions");
+
+const CampaignPaylod = require("./vpayload");
+const { CampaignState } = require("./vstate");
+const { CAMP_NAMESPACE, CAMP_FAMILY, _campaignToString } = require("./family");
+const { _display } = require("./utils");
+
+const _verifyVoter = async (voterPubKey) => {
+  const res = await axios.get(`${process.env.BLOCKCHAIN_ADDR}/batches`);
+  const batches = res.data.data;
+  for (const batch of batches) {
+    const { transactions } = batch;
+    for (const transaction of transactions) {
+      const { signer_public_key } = transaction.header;
+      if (signer_public_key === voterPubKey) {
+        throw new InvalidTransaction(
+          `"Invalid Action: This voter already voted: ${voterPubKey
+            .toString()
+            .substring(0, 6)}`
+        );
+      }
+    }
+  }
+  return true;
+};
 
 const _createCampaign = (campaignState, campaignName) => {
   return campaignState.getCampaign(campaignName).then((campaign) => {
@@ -44,7 +64,7 @@ const _createCampaign = (campaignState, campaignName) => {
   });
 };
 
-const _vote = (campaignState, campaignName, voter, party) => {
+const _vote = (campaignState, campaignName, voterPubKey, party) => {
   return campaignState.getCampaign(campaignName).then((campaign) => {
     let { state, count, parties } = campaign;
 
@@ -64,10 +84,8 @@ const _vote = (campaignState, campaignName, voter, party) => {
         "Invalid Action: Vote requires an existing campaign."
       );
     }
-    if (!voter) {
-      throw new InvalidTransaction(
-        "Invalid Action: Voter can't be recognized."
-      );
+    if (!voterPubKey) {
+      throw new InvalidTransaction("Invalid Action: Voter is not recognized.");
     }
 
     const partyIndex = parties.indexOf(party);
@@ -78,20 +96,14 @@ const _vote = (campaignState, campaignName, voter, party) => {
     //
     //--------------- NEED TO CHECK IF VOTER ALREADY VOTED -----------------------
     //
-    if (true) {
-      currentCount[partyIndex]++;
-    } else {
-      throw new InvalidTransaction(
-        `"Invalid Action: This voter already voted: ${voter
-          .toString()
-          .substring(0, 6)}`
-      );
-    }
+
+    _verifyVoter(voterPubKey);
+    currentCount[partyIndex]++;
 
     // COLLAPSING back to comma-seperated list
     campaign.count = currentCount.join(",");
 
-    let voterString = voter.toString().substring(0, 6);
+    let voterString = voterPubKey.toString().substring(0, 6);
     _display(
       `Voter ${voterString} succefully voted to: ${party}\n\n${_campaignToString(
         campaign
@@ -121,6 +133,15 @@ const _verifyAdmin = (campaign, admin) => {
       `Invalid Action: No admin identification was passed.`
     );
   }
+  // maybe admins should pass more that their key for authnetication, for example a 16-letters password and it's hash result
+  // for the concatenated string and the the hashing should take place here to make sure its result is as should be
+  // so for example, admins will be:
+  // [
+  //   {
+  //     key: `03998d071ea09eea282f986429887a2693b017f6d122a2c95887df21fa006bae92`,
+  //     hash: `0ds9f0sdf90249fsd9f0jfw40fjdsf8` // the result of hashing `${key}${password}`
+  //   }
+  // ]
   admins = [
     `03998d071ea09eea282f986429887a2693b017f6d122a2c95887df21fa006bae92`,
     `03c95695f6acabd711817469b1c4e5f8895c537664876f318c8de402caeef6184e`,
@@ -224,7 +245,7 @@ class CampaignHandler extends TransactionHandler {
     let campaignState = new CampaignState(context);
     let header = transactionProcessRequest.header;
     let userPubKey = header.signerPublicKey;
-    const { name, action, party, adminAddr } = payload;
+    const { name, action, party } = payload;
     if (action === "create") {
       return _createCampaign(campaignState, name);
     } else if (action === "open" || action === "suspend") {
@@ -238,14 +259,6 @@ class CampaignHandler extends TransactionHandler {
       return _vote(campaignState, name, userPubKey, party);
     } else if (action === "close") {
       return _close(campaignState, name, userPubKey);
-    } else if (action === "add_admin" || action === "remove_admin") {
-      return _modifyAdminList(
-        campaignState,
-        name,
-        userPubKey,
-        adminAddr,
-        action.substring(0, action.indexOf("_"))
-      );
     } else if (action === "add_party" || action === "remove_party") {
       return _modifyPartyList(
         campaignState,
@@ -256,7 +269,7 @@ class CampaignHandler extends TransactionHandler {
       );
     } else {
       throw new InvalidTransaction(
-        `Action must be create, delete, or take not ${action}`
+        `The action '${action}' is not listed as a legal action`
       );
     }
   }
@@ -269,7 +282,7 @@ module.exports = CampaignHandler;
 //   campaignName,
 //   admin,
 //   otherAdminAddr,
-//   cmd
+//   cmd //can be either "add_admin" or "remove_admin"
 // ) => {
 //   return campaignState.getCampaign(campaignName).then((campaign) => {
 //     let admins = _verifyandParseAdmins(campaign, admin);

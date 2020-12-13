@@ -5,13 +5,15 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ./src/index.js"
+    "start": "env-cmd -f ./.dev.env node ./src/index.js tcp://127.0.0.1:4004"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.21.0",
     "cbor": "^5.1.0",
+    "env-cmd": "^10.1.0",
     "node-fetch": "^2.6.1",
     "sawtooth-sdk": "^1.0.5",
     "text-encoder": "0.0.4",

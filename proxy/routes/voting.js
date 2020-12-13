@@ -8,8 +8,14 @@ router.post("/:name", (req, res) => {
   const { party, privkey } = req.query;
   const signer = generateSigner(privkey);
   const payload = `${name},vote,${party},_`;
+
   sendPayload(signer, payload).then((response) =>
-    res.json({ ...response, name, party })
+    res.json({
+      ...response,
+      name,
+      party,
+      pubkey: signer.getPublicKey().asHex(),
+    })
   );
 });
 
