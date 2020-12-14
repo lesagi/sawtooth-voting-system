@@ -101,7 +101,7 @@ const _vote = (campaignState, campaignName, voterPubKey, party) => {
     //--------------- NEED TO CHECK IF VOTER ALREADY VOTED -----------------------
     //
 
-    _verifyVoter(voterPubKey)
+    return _verifyVoter(voterPubKey)
       .then((res) => {
         if (res) {
           currentCount[partyIndex]++;
