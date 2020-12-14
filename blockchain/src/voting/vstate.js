@@ -17,7 +17,11 @@
 
 "use strict";
 
-const { _deserialize, _serialize, _makeCampaignAddress } = require("./family");
+const {
+  _deserialize,
+  _serialize,
+  _makeCampaignAddress,
+} = require("./camp_family");
 
 class CampaignState {
   constructor(context) {

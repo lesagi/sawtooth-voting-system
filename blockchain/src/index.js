@@ -18,7 +18,8 @@
 "use strict";
 
 const { TransactionProcessor } = require("sawtooth-sdk/processor");
-const CampaignHandler = require("./vhandler");
+const CampaignHandler = require("./voting/vhandler");
+const CitizenHandler = require("./citizens/ghandler");
 // default validator address: tcp://127.0.0.1:4004
 if (process.argv.length < 3) {
   console.log("missing a validator address");
@@ -30,5 +31,6 @@ const address = process.argv[2];
 const transactionProcessor = new TransactionProcessor(address);
 
 transactionProcessor.addHandler(new CampaignHandler());
+transactionProcessor.addHandler(new CitizenHandler());
 
 transactionProcessor.start();

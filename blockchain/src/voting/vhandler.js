@@ -23,8 +23,12 @@ const { InvalidTransaction } = require("sawtooth-sdk/processor/exceptions");
 
 const CampaignPaylod = require("./vpayload");
 const { CampaignState } = require("./vstate");
-const { CAMP_NAMESPACE, CAMP_FAMILY, _campaignToString } = require("./family");
-const { _display } = require("./utils");
+const {
+  CAMP_NAMESPACE,
+  CAMP_FAMILY,
+  _campaignToString,
+} = require("./camp_family");
+const { _display } = require("../utils");
 
 const _verifyVoter = async (voterPubKey) => {
   const res = await axios.get(`${process.env.BLOCKCHAIN_ADDR}/batches`);
@@ -32,8 +36,8 @@ const _verifyVoter = async (voterPubKey) => {
   for (const batch of batches) {
     const { transactions } = batch;
     for (const transaction of transactions) {
-      const { signer_public_key } = transaction.header;
-      if (signer_public_key === voterPubKey) {
+      const { signer_public_key, family_name } = transaction.header;
+      if (signer_public_key === voterPubKey && family_name === CAMP_FAMILY) {
         throw new InvalidTransaction(
           `"Invalid Action: This voter already voted: ${voterPubKey
             .toString()
@@ -97,20 +101,24 @@ const _vote = (campaignState, campaignName, voterPubKey, party) => {
     //--------------- NEED TO CHECK IF VOTER ALREADY VOTED -----------------------
     //
 
-    _verifyVoter(voterPubKey);
-    currentCount[partyIndex]++;
+    _verifyVoter(voterPubKey)
+      .then((res) => {
+        if (res) {
+          currentCount[partyIndex]++;
+          // COLLAPSING back to comma-seperated list
+          campaign.count = currentCount.join(",");
 
-    // COLLAPSING back to comma-seperated list
-    campaign.count = currentCount.join(",");
-
-    let voterString = voterPubKey.toString().substring(0, 6);
-    _display(
-      `Voter ${voterString} succefully voted to: ${party}\n\n${_campaignToString(
-        campaign
-      )}`
-    );
-
-    return campaignState.setCampaign(campaignName, campaign);
+          let voterString = voterPubKey.toString().substring(0, 6);
+          _display(
+            `Voter ${voterString} succefully voted to: ${party}\n\n${_campaignToString(
+              campaign
+            )}`
+          );
+          console.log(campaign);
+          return campaignState.setCampaign(campaignName, campaign);
+        }
+      })
+      .catch((e) => console.log(e));
   });
 };
 

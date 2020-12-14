@@ -19,32 +19,25 @@
 const { TextDecoder } = require("text-encoding/lib/encoding");
 const { InvalidTransaction } = require("sawtooth-sdk/processor/exceptions");
 const decoder = new TextDecoder("utf8");
-class XoPayload {
-  constructor(name, action, space) {
-    this.name = name;
-    this.action = action;
-    this.space = space;
+
+class CitizenPayload {
+  constructor(firstName, lastName) {
+    this.firstName = firstName;
+    this.lastName = lastName;
   }
 
-  static fromBytes(payload) {
-    payload = decoder.decode(payload).split(",");
-    if (payload.length === 3) {
-      let [name, action, space] = payload;
-      let xoPayload = new XoPayload(name, action, space);
-      if (!xoPayload.name) {
-        throw new InvalidTransaction("Name is required");
-      }
-      if (xoPayload.name.indexOf("|") !== -1) {
-        throw new InvalidTransaction('Name cannot contain "|"');
-      }
-      if (!xoPayload.action) {
-        throw new InvalidTransaction("Action is required");
-      }
-      return xoPayload;
-    } else {
+  static fromBytes(bytesPayload) {
+    bytesPayload = decoder.decode(bytesPayload).split(",");
+    if (!bytesPayload.length == 2) {
       throw new InvalidTransaction("Invalid payload serialization");
     }
+    const [firstName, lastName] = payload;
+    let payload = new CitizenPayload(firstName, lastName);
+    if (!payload.firstName || !payload.lastName) {
+      throw new InvalidTransaction("Both first and last name are required");
+    }
+    return payload;
   }
 }
 
-module.exports = XoPayload;
+module.exports = CitizenPayload;

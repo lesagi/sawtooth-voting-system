@@ -1,4 +1,4 @@
-const { _hash } = require("./utils");
+const { _hash } = require("../utils");
 
 const CAMP_FAMILY = "votingSystem";
 const CAMP_NAMESPACE = _hash(CAMP_FAMILY).substring(0, 6);
