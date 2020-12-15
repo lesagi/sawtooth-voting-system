@@ -28,9 +28,22 @@ const {
   CAMP_FAMILY,
   _campaignToString,
 } = require("./camp_family");
+const { CIT_FAMILY } = require("../citizens/citizen_family");
 const { _display } = require("../utils");
 
 const _verifyVoter = async (voterPubKey) => {
+  const chisgads = require("../../listing/chisgads.json");
+  let found = chisgads.keys.reduce(
+    (acc, curr) => acc || curr === voterPubKey,
+    false
+  );
+  if (!found) {
+    throw new InvalidTransaction(
+      `Invalid Action: Vote code ${voterPubKey
+        .toString()
+        .substring(0, 6)} is not valid`
+    );
+  }
   const res = await axios.get(`${process.env.BLOCKCHAIN_ADDR}/batches`);
   const batches = res.data.data;
   for (const batch of batches) {
@@ -39,7 +52,7 @@ const _verifyVoter = async (voterPubKey) => {
       const { signer_public_key, family_name } = transaction.header;
       if (signer_public_key === voterPubKey && family_name === CAMP_FAMILY) {
         throw new InvalidTransaction(
-          `"Invalid Action: This voter already voted: ${voterPubKey
+          `Invalid Action: This voter already voted: ${voterPubKey
             .toString()
             .substring(0, 6)}`
         );
@@ -123,18 +136,6 @@ const _vote = (campaignState, campaignName, voterPubKey, party) => {
 };
 
 const _verifyAdmin = (campaign, admin) => {
-  // {
-  //   "privateKey": "3dca5bb233242e9ebe188bc89005ccc81c17422f1fa20a5b6fc566b72d43e5a2",
-  //   "publicKey": "03998d071ea09eea282f986429887a2693b017f6d122a2c95887df21fa006bae92"
-  // }
-  // {
-  //   "privateKey": "982fe507f3e5d9d35d548a2b66e7319cd5034ff61abc82a7446e8a547268d291",
-  //   "publicKey": "03c95695f6acabd711817469b1c4e5f8895c537664876f318c8de402caeef6184e"
-  // }
-  // {
-  //   "privateKey": "82156f0c52cf239fb52da067cb2c9d3abe5c8cddf048e0399c89bf67092f5fb4",
-  //   "publicKey": "038aac7f2bb672f3a4ec2f5c64d8766bbcabc8a71d63f9af060273f8e2f62e6636"
-  // }
   let { admins } = campaign;
   if (!admin) {
     throw new InvalidTransaction(
@@ -244,6 +245,36 @@ const _modifyRunningCampaignState = (
   });
 };
 
+const _verifyVoteCount = (campaignState, campaignName) => {
+  campaignState.getCampaign(campaignName).then(async (campaign) => {
+    let { count } = campaign;
+    let votesCount = count
+      .split(",")
+      .reduce((acc, curr) => acc + Number(curr), 0);
+    let checkinCount = 0;
+    const res = await axios.get(`${process.env.BLOCKCHAIN_ADDR}/batches`);
+    const batches = res.data.data;
+    for (const batch of batches) {
+      const { transactions } = batch;
+      for (const transaction of transactions) {
+        const { family_name } = transaction.header;
+        const decodedPayload = Buffer.from(transaction.payload, "base64")
+          .toString()
+          .split(",");
+        if (family_name === CIT_FAMILY && decodedPayload.length === 2) {
+          checkinCount++;
+        }
+      }
+    }
+    if (checkinCount < votesCount) {
+      throw new InvalidTransaction(
+        `Invalid Action: This voter already voted: ${voterPubKey
+          .toString()
+          .substring(0, 6)}`
+      );
+    }
+  });
+};
 class CampaignHandler extends TransactionHandler {
   constructor() {
     super(CAMP_FAMILY, ["1.0"], [CAMP_NAMESPACE]);
@@ -263,8 +294,6 @@ class CampaignHandler extends TransactionHandler {
         userPubKey,
         action
       );
-    } else if (action === "vote") {
-      return _vote(campaignState, name, userPubKey, party);
     } else if (action === "close") {
       return _close(campaignState, name, userPubKey);
     } else if (action === "add_party" || action === "remove_party") {
@@ -275,11 +304,17 @@ class CampaignHandler extends TransactionHandler {
         party,
         action.substring(0, action.indexOf("_"))
       );
-    } else {
-      throw new InvalidTransaction(
-        `The action '${action}' is not listed as a legal action`
-      );
     }
+
+    _verifyVoteCount(campaignState, name);
+
+    if (action === "vote") {
+      return _vote(campaignState, name, userPubKey, party);
+    }
+
+    throw new InvalidTransaction(
+      `The action '${action}' is not listed as a legal action`
+    );
   }
 }
 

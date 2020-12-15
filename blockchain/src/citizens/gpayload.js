@@ -21,20 +21,20 @@ const { InvalidTransaction } = require("sawtooth-sdk/processor/exceptions");
 const decoder = new TextDecoder("utf8");
 
 class CitizenPayload {
-  constructor(firstName, lastName) {
-    this.firstName = firstName;
-    this.lastName = lastName;
+  constructor(id, ballot) {
+    this.id = id;
+    this.ballot = ballot;
   }
 
   static fromBytes(bytesPayload) {
     bytesPayload = decoder.decode(bytesPayload).split(",");
-    if (!bytesPayload.length == 2) {
+    if (!bytesPayload.length == 3) {
       throw new InvalidTransaction("Invalid payload serialization");
     }
-    const [firstName, lastName] = payload;
-    let payload = new CitizenPayload(firstName, lastName);
-    if (!payload.firstName || !payload.lastName) {
-      throw new InvalidTransaction("Both first and last name are required");
+    const [id, ballot] = bytesPayload;
+    let payload = new CitizenPayload(id, ballot);
+    if (!payload.id) {
+      throw new InvalidTransaction("ID is required");
     }
     return payload;
   }

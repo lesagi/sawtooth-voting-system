@@ -24,7 +24,7 @@ const { InvalidTransaction } = require("sawtooth-sdk/processor/exceptions");
 const CitizenPayload = require("./gpayload");
 const { CIT_NAMESPACE, CIT_FAMILY } = require("./citizen_family");
 
-const _verifyVoter = async (firstName, lastName) => {
+const _verifyVoter = async (id) => {
   const res = await axios.get(`${process.env.BLOCKCHAIN_ADDR}/batches`);
   const batches = res.data.data;
   for (const batch of batches) {
@@ -34,12 +34,10 @@ const _verifyVoter = async (firstName, lastName) => {
       const { family_name } = header;
       if (family_name === CIT_FAMILY) {
         const decoded = Buffer.from(payload, "base64").toString();
-        const [transFirstName, transLastName] = decoded.split(",");
-        if (firstName === transFirstName && lastName === transLastName) {
+        const [transId, transBallot] = decoded.split(",");
+        if (id === transId) {
           throw new InvalidTransaction(
-            `"Invalid Action: This voter already voted: ${voterPubKey
-              .toString()
-              .substring(0, 6)}`
+            `"Invalid Action: Voter ${id} already checked-in in ballot no.${transBallot}`
           );
         }
       }
@@ -54,14 +52,8 @@ class CitizenHandler extends TransactionHandler {
   }
   apply(transactionProcessRequest, context) {
     let payload = CitizenPayload.fromBytes(transactionProcessRequest.payload);
-    const { firstName, lastName } = payload;
-    _verifyVoter(firstName, lastName)
-      .then((res) => {
-        if (res) {
-          currentCount[partyIndex]++;
-        }
-      })
-      .catch((e) => console.log(e));
+    const { id } = payload;
+    _verifyVoter(id).catch((e) => console.log(e));
   }
 }
 

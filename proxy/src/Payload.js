@@ -2,13 +2,15 @@ const {
   createTransactionHeader,
   createTransaction,
 } = require("../src/Transaction");
-const { CAMP_FAMILY, _makeCampaignAddress } = require("./Family");
 const { createBatchHeader, createBatch, submitBatch } = require("./Batch");
 
-const sendPayload = async (signer, payload) => {
+const { CAMP_FAMILY, _makeCampaignAddress } = require("./Family");
+const { CIT_FAMILY, _makeCitizenAddress } = require("./CitFamily");
+
+const sendPayload = (family, addressGenerator) => async (signer, payload) => {
   const { transactionHeaderBytes, payloadBytes } = createTransactionHeader(
-    CAMP_FAMILY,
-    _makeCampaignAddress,
+    family,
+    addressGenerator,
     signer,
     payload
   );
@@ -23,4 +25,7 @@ const sendPayload = async (signer, payload) => {
   return await submitBatch([batch]);
 };
 
-module.exports = { sendPayload };
+const sendCampaignPayload = sendPayload(CAMP_FAMILY, _makeCampaignAddress);
+const sendCitizenPayload = sendPayload(CIT_FAMILY, _makeCitizenAddress);
+
+module.exports = { sendCampaignPayload, sendCitizenPayload };

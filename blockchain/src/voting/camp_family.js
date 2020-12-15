@@ -3,6 +3,7 @@ const { _hash } = require("../utils");
 const CAMP_FAMILY = "votingSystem";
 const CAMP_NAMESPACE = _hash(CAMP_FAMILY).substring(0, 6);
 const _makeCampaignAddress = (x) => CAMP_NAMESPACE + _hash(x);
+
 const _deserialize = (data) => {
   let campaignsIterable = data
     .split("|")

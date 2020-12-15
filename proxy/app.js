@@ -30,6 +30,8 @@ const adminRoutes = require("./routes/admin.js");
 app.use("/admin", adminRoutes);
 const signerRoutes = require("./routes/signer.js");
 app.use("/signer", signerRoutes);
+const checkinRoutes = require("./routes/checkin.js");
+app.use("/checkin", checkinRoutes);
 
 //Home Route
 app.get("/", function (req, res) {
