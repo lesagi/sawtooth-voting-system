@@ -1,6 +1,6 @@
 # Sawtooth-Based Voting System
 
-[![Build Status](https://travis-ci.org/joemccann/dillinger.svg?branch=master)](https://travis-ci.org/joemccann/dillinger)
+[![Build Status](https://travis-ci.org/joemccann/dillinger.svg?branch=master)](https://github.com/lesagi/sawtooth-voting-system)
 
 # System Design
 This is a sawtooth-based voting system. The use is accessible through a REST API (explained later).
@@ -56,6 +56,7 @@ All the transactions-request API endpoints respond with a JSON that contains at 
 - publicKey: public key of the secret scratch card
 
 ## Campaign Management API
+Some of these APIs make use of "admin_private_key", this can be set by the user in any way he likes, I gave as an example 3 keys in the admins.json file in the 'blockchain' folder
 #### CAMPAIGN CREATION process
 > POST
 > /admin/open_campaign?privkey={admin_private_key}
